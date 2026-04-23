@@ -1,0 +1,7 @@
+langchain
+langchain-google-genai
+langchain-experimental
+python-dotenv
+pandas
+matplotlib
+chromadb

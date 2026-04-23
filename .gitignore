@@ -1,0 +1,22 @@
+# API Keys & Secrets
+.env
+
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ChromaDB Episodic Memory Storage
+chroma_db/
+vector_store/
+
+# Data and Outputs (Ignore CSVs and generated plots, but keep the folder structure)
+data/*.csv
+data/*.png
+data/*.jpg
+data/*.md
