@@ -14,7 +14,7 @@ load_dotenv()
 llm = ChatGroq(
     model="llama-3.3-70b-versatile",
     temperature=0.0, 
-    api_key="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" # <--- Paste your gsk_... key inside these quotes!
+    api_key="API_KEY" # <--- Paste your gsk_... key inside these quotes!
 )
 
 tools = [execute_python]
