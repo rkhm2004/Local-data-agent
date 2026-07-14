@@ -1,22 +1,45 @@
-# API Keys & Secrets
+# ========================
+# 1. API Keys & Secrets
+# ========================
 .env
+.env.local
+.env.*.local
 
-# Virtual Environments
+# ========================
+# 2. Python & Backend
+# ========================
 .venv/
 venv/
 env/
-
-# Python Cache
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
 
-# ChromaDB Episodic Memory Storage
-chroma_db/
-vector_store/
+# ========================
+# 3. Database & Data Outputs
+# ========================
+# Ignore all data and memory files, but keep the folders structure intact
+chroma_data/*
+!chroma_data/.gitkeep
 
-# Data and Outputs (Ignore CSVs and generated plots, but keep the folder structure)
-data/*.csv
-data/*.png
-data/*.jpg
-data/*.md
+data/*
+!data/.gitkeep
+
+# ========================
+# 4. Frontend (Next.js & Node)
+# ========================
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp.*
+
+# ========================
+# 5. OS & System Files
+# ========================
+.DS_Store
+Thumbs.db
