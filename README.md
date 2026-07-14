@@ -37,3 +37,36 @@ Thinking and Executing...
 Final Answer: The dataset has been preprocessed. Missing values were filled with the mean, and the clean data is saved in the './data/' folder.
 ```
 ## For this local data agent frontend need to be build..
+
+## New Project Folder Structure
+```
+my_agent_project/
+├── chroma_data/                # UNCHANGED (Path preserved)
+│   └── chroma.sqlite3
+├── data/                       # UNCHANGED (Paths preserved)
+│   ├── clean_data.csv
+│   ├── date_test.csv
+│   ├── outlier.csv
+│   └── text_mess.csv
+├── memory/                     # UNCHANGED (Paths preserved)
+│   └── vector_db.py
+├── tools/                      # UNCHANGED (Paths preserved)
+│   └── code_runner.py
+├── .gitignore
+├── check.py
+├── main.py                     # UNCHANGED
+├── requirements.txt            # UNCHANGED (Just add FastAPI / Uvicorn here)
+├── api.py                      # NEW: FastAPI Server (Added next to main.py)
+├── frontend/                   # NEW: Next.js App (Completely isolated)
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx        # Live Chat & Stream interface
+│   │   └── components/
+│   │       ├── ui/             # shadcn/ui components
+│   │       ├── ParticleBg.tsx  # tsParticles component
+│   │       └── ChatWindow.tsx
+│   ├── tailwind.config.ts      # Black & Orange theme rules
+│   ├── package.json
+│   └── tsconfig.json
+```
