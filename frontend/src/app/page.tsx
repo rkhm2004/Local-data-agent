@@ -26,6 +26,7 @@ export default function Home() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let finished = false;
+      let currentEvent = ""; // Track what type of data is coming next
 
       while (!finished) {
         const { value, done } = await reader.read();
@@ -35,12 +36,23 @@ export default function Home() {
           const lines = chunk.split("\n");
           
           lines.forEach((line) => {
-            if (line.startsWith("event: processing")) {
-              const dataStr = line.replace("event: processing\ndata: ", "").trim();
-              if(dataStr) setLogs((prev) => [...prev, dataStr]);
-            } else if (line.startsWith("event: llm_chunk")) {
-              const content = line.replace("event: llm_chunk\ndata: ", "");
-              setLlmResponse((prev) => prev + content);
+            const trimmed = line.trim();
+            
+            // 1. Identify the event type
+            if (trimmed.startsWith("event: ")) {
+              currentEvent = trimmed.substring(7); // Strips out "event: "
+            } 
+            // 2. Extract and route the actual data
+            else if (trimmed.startsWith("data: ")) {
+              const dataContent = trimmed.substring(6); // Strips out "data: "
+              
+              if (currentEvent === "processing" && dataContent) {
+                setLogs((prev) => [...prev, dataContent]);
+              } else if (currentEvent === "llm_chunk") {
+                // Properly format newlines sent by the LLM
+                const cleanContent = dataContent.replace(/\\n/g, "\n");
+                setLlmResponse((prev) => prev + cleanContent);
+              }
             }
           });
         }

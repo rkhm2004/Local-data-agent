@@ -51,7 +51,6 @@ export default function ChatWindow({ logs, llmResponse, isStreaming, onSubmit }:
           <Cpu className="h-3 w-3" /> Agent Execution Response Node
         </div>
         <AnimatePresence mode="wait">
-          {/* FIXED CONDITIONAL RENDERING HERE */}
           {llmResponse && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="leading-relaxed text-gray-200 whitespace-pre-line">
               {llmResponse}
