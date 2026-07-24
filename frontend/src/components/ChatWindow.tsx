@@ -1,18 +1,19 @@
 "use client";
 import React, { useState, useRef, useEffect, FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Cpu, Activity, Database, Zap } from "lucide-react";
-import { AgentState } from "@/app/page";
+import { Send, Cpu, Activity, Database, Zap, User } from "lucide-react";
+import { AgentState, Message } from "@/app/page";
 
 interface ChatProps {
   logs: string[];
-  llmResponse: string;
+  messages: Message[];
+  currentStream: string;
   isStreaming: boolean;
   agentState: AgentState;
   onSubmit: (prompt: string) => void;
 }
 
-export default function ChatWindow({ logs, llmResponse, isStreaming, agentState, onSubmit }: ChatProps) {
+export default function ChatWindow({ logs, messages, currentStream, isStreaming, agentState, onSubmit }: ChatProps) {
   const [input, setInput] = useState<string>("");
   const logEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -20,7 +21,7 @@ export default function ChatWindow({ logs, llmResponse, isStreaming, agentState,
     if (logEndRef.current) {
       logEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [logs, llmResponse]);
+  }, [logs, messages, currentStream]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -29,7 +30,6 @@ export default function ChatWindow({ logs, llmResponse, isStreaming, agentState,
     setInput("");
   };
 
-  // Dynamic Status for the Right Panel
   const getStatusVisuals = () => {
     switch (agentState) {
       case "searching": return { color: "text-cyan-400", border: "border-cyan-500/50", glow: "shadow-[0_0_30px_rgba(0,255,255,0.15)]", corner: "border-cyan-500", icon: <Database className="h-4 w-4 animate-pulse" /> };
@@ -44,11 +44,8 @@ export default function ChatWindow({ logs, llmResponse, isStreaming, agentState,
   return (
     <div className="flex flex-col md:flex-row w-full h-full gap-6 font-mono">
       
-      {/* ========================================== */}
-      {/* LEFT PANEL: TELEMETRY (Light Blue Accents) */}
-      {/* ========================================== */}
+      {/* LEFT PANEL: TELEMETRY */}
       <div className="hidden md:flex flex-col w-1/3 bg-[#050505]/80 border border-[#00D4FF]/30 rounded shadow-[0_0_20px_rgba(0,212,255,0.1)] backdrop-blur-md relative overflow-hidden">
-        {/* Sci-Fi Corner Accents */}
         <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00D4FF]" />
         <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00D4FF]" />
         <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00D4FF]" />
@@ -56,8 +53,7 @@ export default function ChatWindow({ logs, llmResponse, isStreaming, agentState,
 
         <div className="p-4 border-b border-[#00D4FF]/20 bg-gradient-to-r from-[#00D4FF]/10 to-transparent">
           <div className="flex items-center gap-2 text-[#00D4FF] uppercase tracking-[0.2em] text-[11px] font-bold">
-            <Activity className="h-4 w-4 animate-pulse" /> 
-            SYS.TELEMETRY
+            <Activity className="h-4 w-4 animate-pulse" /> SYS.TELEMETRY
           </div>
         </div>
 
@@ -73,11 +69,8 @@ export default function ChatWindow({ logs, llmResponse, isStreaming, agentState,
         </div>
       </div>
 
-      {/* ========================================== */}
-      {/* RIGHT PANEL: MAIN AI RESPONSE NODE         */}
-      {/* ========================================== */}
+      {/* RIGHT PANEL: CHAT HISTORY */}
       <div className={`flex flex-col flex-1 bg-[#050505]/80 border ${visuals.border} rounded ${visuals.glow} backdrop-blur-md relative overflow-hidden transition-all duration-700`}>
-        {/* Dynamic Sci-Fi Corner Accents */}
         <div className={`absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 ${visuals.corner} transition-colors duration-700`} />
         <div className={`absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 ${visuals.corner} transition-colors duration-700`} />
         <div className={`absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 ${visuals.corner} transition-colors duration-700`} />
@@ -90,22 +83,42 @@ export default function ChatWindow({ logs, llmResponse, isStreaming, agentState,
           </div>
         </div>
 
-        {/* Output Area */}
-        <div className="flex-1 p-6 overflow-y-auto space-y-4 text-sm bg-gradient-to-b from-transparent to-black/20">
-          <AnimatePresence mode="wait">
-            {llmResponse && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="leading-loose text-gray-200 whitespace-pre-line tracking-wide">
-                {llmResponse}
-                {isStreaming && <span className={`inline-block w-2.5 h-4 ml-1 align-middle animate-pulse bg-current ${visuals.color}`} />}
-              </motion.div>
-            )}
-            {!llmResponse && !isStreaming && (
-              <div className="flex flex-col items-center justify-center h-full text-gray-600 italic space-y-3">
-                <Cpu className="h-10 w-10 opacity-20" />
-                <p className="opacity-50 tracking-widest text-xs uppercase">Terminal Online. Awaiting Directives.</p>
+        {/* Chat Bubbles Area */}
+        <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-gradient-to-b from-transparent to-black/20">
+          
+          {messages.length === 0 && !isStreaming && (
+            <div className="flex flex-col items-center justify-center h-full text-gray-600 italic space-y-3">
+              <Cpu className="h-10 w-10 opacity-20" />
+              <p className="opacity-50 tracking-widest text-xs uppercase">Terminal Online. Awaiting Directives.</p>
+            </div>
+          )}
+
+          {/* Render Historical Messages */}
+          {messages.map((msg, idx) => (
+            <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex flex-col w-full ${msg.role === "user" ? "items-end" : "items-start"}`}>
+              <div className={`flex items-center gap-2 mb-1 opacity-50 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                {msg.role === "user" ? <User className="h-3 w-3 text-[#00D4FF]" /> : <Cpu className="h-3 w-3 text-[#FF6600]" />}
+                <span className="text-[9px] uppercase tracking-widest">{msg.role === "user" ? "Operator" : "Agent"}</span>
               </div>
-            )}
-          </AnimatePresence>
+              <div className={`p-3 rounded-md max-w-[85%] text-sm whitespace-pre-line leading-relaxed border ${msg.role === "user" ? "bg-[#00D4FF]/5 border-[#00D4FF]/30 text-[#00D4FF]" : "bg-black/60 border-white/10 text-gray-200"}`}>
+                {msg.content}
+              </div>
+            </motion.div>
+          ))}
+
+          {/* Render the Active Stream Message */}
+          {isStreaming && currentStream && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col w-full items-start">
+               <div className="flex items-center gap-2 mb-1 opacity-50">
+                  <Cpu className="h-3 w-3 text-emerald-400" />
+                  <span className="text-[9px] uppercase tracking-widest text-emerald-400 animate-pulse">Agent (Streaming)</span>
+                </div>
+                <div className="p-3 rounded-md max-w-[85%] text-sm whitespace-pre-line leading-relaxed border bg-black/60 border-emerald-500/30 text-emerald-300">
+                  {currentStream}
+                  <span className={`inline-block w-2 h-3 ml-1 align-middle animate-pulse bg-emerald-400`} />
+                </div>
+            </motion.div>
+          )}
           <div ref={logEndRef} />
         </div>
 

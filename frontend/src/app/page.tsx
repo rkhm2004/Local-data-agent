@@ -6,15 +6,23 @@ import FileManager from "@/components/FileManager";
 
 export type AgentState = "idle" | "searching" | "executing" | "streaming";
 
+export interface Message {
+  role: "user" | "ai";
+  content: string;
+}
+
 export default function Home() {
   const [logs, setLogs] = useState<string[]>([]);
-  const [llmResponse, setLlmResponse] = useState<string>("");
+  const [messages, setMessages] = useState<Message[]>([]); // New Chat History State
+  const [currentStream, setCurrentStream] = useState<string>(""); // Active typing stream
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [agentState, setAgentState] = useState<AgentState>("idle");
 
   const handleTriggerAgent = async (prompt: string) => {
+    // 1. Instantly add user message to history
+    setMessages((prev) => [...prev, { role: "user", content: prompt }]);
+    setCurrentStream("");
     setLogs([]);
-    setLlmResponse("");
     setIsStreaming(true);
     setAgentState("searching"); 
 
@@ -22,7 +30,8 @@ export default function Home() {
       const response = await fetch("http://localhost:8000/api/chat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: prompt }),
+        // Send history to backend!
+        body: JSON.stringify({ message: prompt, history: messages }), 
       });
 
       if (!response?.body) return;
@@ -30,6 +39,7 @@ export default function Home() {
       const decoder = new TextDecoder();
       let finished = false;
       let currentEvent = ""; 
+      let fullResponse = ""; // Accumulate string locally
 
       while (!finished) {
         const { value, done } = await reader.read();
@@ -47,18 +57,26 @@ export default function Home() {
               
               if (currentEvent === "processing" && dataContent.trim()) {
                 setLogs((prev) => [...prev, dataContent.trim()]);
-                if (dataContent.includes("thinking and executing")) {
+                if (dataContent.includes("executing") || dataContent.includes("pipeline")) {
                   setAgentState("executing");
                 }
               } else if (currentEvent === "llm_chunk") {
                 setAgentState("streaming");
                 const cleanContent = dataContent.replace(/\\n/g, "\n");
-                setLlmResponse((prev) => prev + cleanContent);
+                fullResponse += cleanContent;
+                setCurrentStream((prev) => prev + cleanContent);
               }
             }
           });
         }
       }
+      
+      // 2. Once finished, push the fully streamed response into the permanent history array
+      if (fullResponse) {
+        setMessages((prev) => [...prev, { role: "ai", content: fullResponse }]);
+        setCurrentStream("");
+      }
+
     } catch (error) {
       setLogs((prev) => [...prev, "❌ Terminal Connection Loss..."]);
     } finally {
@@ -69,22 +87,17 @@ export default function Home() {
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-transparent text-gray-100 flex flex-col items-center justify-center p-4 md:p-8 font-mono">
-      {/* Dynamic Background */}
       <ParticleBg agentState={agentState} />
-      
-      {/* CRT Scanline Overlay */}
       <div className="pointer-events-none fixed inset-0 z-50 h-full w-full bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px] opacity-20" />
-
-      {/* Floating File Manager */}
       <div className="absolute top-6 right-6 z-50">
         <FileManager />
       </div>
 
-      {/* Main App Container - Widened for Side-by-Side layout */}
       <section className="z-10 w-full max-w-7xl h-[85vh] flex">
         <ChatWindow 
           logs={logs} 
-          llmResponse={llmResponse} 
+          messages={messages}
+          currentStream={currentStream}
           isStreaming={isStreaming} 
           agentState={agentState}
           onSubmit={handleTriggerAgent} 
