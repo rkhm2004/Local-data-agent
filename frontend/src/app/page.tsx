@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import ParticleBg from "@/components/ParticleBg";
 import ChatWindow from "@/components/ChatWindow";
 import FileManager from "@/components/FileManager";
-import { Terminal } from "lucide-react";
 
 export type AgentState = "idle" | "searching" | "executing" | "streaming";
 
@@ -17,7 +16,7 @@ export default function Home() {
     setLogs([]);
     setLlmResponse("");
     setIsStreaming(true);
-    setAgentState("searching"); // Initial state when trigger is hit
+    setAgentState("searching"); 
 
     try {
       const response = await fetch("http://localhost:8000/api/chat/stream", {
@@ -48,7 +47,6 @@ export default function Home() {
               
               if (currentEvent === "processing" && dataContent.trim()) {
                 setLogs((prev) => [...prev, dataContent.trim()]);
-                // Shift state based on telemetry text
                 if (dataContent.includes("thinking and executing")) {
                   setAgentState("executing");
                 }
@@ -70,25 +68,20 @@ export default function Home() {
   };
 
   return (
-    <main className="relative min-h-screen w-screen overflow-x-hidden bg-transparent text-gray-100 flex flex-col items-center justify-between p-6 font-mono">
+    <main className="relative h-screen w-screen overflow-hidden bg-transparent text-gray-100 flex flex-col items-center justify-center p-4 md:p-8 font-mono">
       {/* Dynamic Background */}
       <ParticleBg agentState={agentState} />
       
       {/* CRT Scanline Overlay */}
       <div className="pointer-events-none fixed inset-0 z-50 h-full w-full bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px] opacity-20" />
 
-      <header className="z-10 w-full max-w-5xl flex items-center justify-between border-b border-[#FF6600]/30 pb-4 mb-4 relative">
-        <div className="absolute bottom-0 left-0 h-[1px] w-full bg-gradient-to-r from-transparent via-[#FF6600] to-transparent opacity-50" />
-        <div className="flex items-center gap-3">
-          <Terminal className="text-[#FF6600] h-6 w-6 animate-pulse drop-shadow-[0_0_8px_rgba(255,102,0,0.8)]" />
-          <h1 className="text-xl font-bold tracking-[0.2em] text-[#FF6600] drop-shadow-[0_0_5px_rgba(255,102,0,0.5)]">
-            CORE_AGENT // OPERATIONAL_INTERFACE
-          </h1>
-        </div>
+      {/* Floating File Manager */}
+      <div className="absolute top-6 right-6 z-50">
         <FileManager />
-      </header>
+      </div>
 
-      <section className="z-10 w-full max-w-5xl flex-1 grid grid-cols-1 gap-6 my-auto">
+      {/* Main App Container - Widened for Side-by-Side layout */}
+      <section className="z-10 w-full max-w-7xl h-[85vh] flex">
         <ChatWindow 
           logs={logs} 
           llmResponse={llmResponse} 
