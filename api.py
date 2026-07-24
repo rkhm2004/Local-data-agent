@@ -32,7 +32,6 @@ llm = ChatGroq(
 tools = [execute_python]
 agent_executor = create_react_agent(llm, tools)
 
-# 1. Update Request to include Chat History
 class MessageDict(BaseModel):
     role: str
     content: str
@@ -41,39 +40,39 @@ class ChatRequest(BaseModel):
     message: str
     history: list[MessageDict] = []
 
+class CodeExecuteRequest(BaseModel):
+    code: str
+
+# NEW ENDPOINT: Allows the UI to run code directly from the left panel!
+@app.post("/api/execute")
+async def execute_code_direct(request: CodeExecuteRequest):
+    try:
+        output = execute_python(request.code)
+        return {"status": "success", "output": output}
+    except Exception as e:
+        return {"status": "error", "output": str(e)}
+
 @app.post("/api/chat/stream")
 async def chat_stream(request: ChatRequest):
     async def event_generator():
         user_input = request.message
-        
-        # 2. DYNAMIC TELEMETRY based on what the user actually asked
-        input_lower = user_input.lower()
-        if "calculate" in input_lower or "math" in input_lower or "number" in input_lower:
-            yield f"event: processing\ndata: 🧮 Initializing mathematical computation matrix...\n\n"
-        elif "file" in input_lower or "folder" in input_lower or "delete" in input_lower:
-            yield f"event: processing\ndata: 📂 Scanning local directory and file structures...\n\n"
-        elif "plot" in input_lower or "graph" in input_lower or "chart" in input_lower:
-            yield f"event: processing\ndata: 📊 Loading data visualization libraries...\n\n"
-        else:
-            yield f"event: processing\ndata: 🧠 Analyzing semantic parameters of query...\n\n"
-
-        yield f"event: processing\ndata: 🔍 Cross-referencing Episodic Memory...\n\n"
         context = get_relevant_context(user_input)
-        if context not in ["No prior preferences saved.", "No relevant preferences found."]:
-            yield f"event: processing\ndata: 💾 Memory Recalled: Applying user preferences...\n\n"
-            
-        yield f"event: processing\ndata: ⚡ Routing request to execution agent...\n\n"
         
+        # We instruct the LLM to explicitly output its code in markdown blocks so the UI can grab it
         system_prompt = SystemMessage(content=f"""You are an autonomous Data Science Co-Pilot.
         You have access to a local Python environment via the 'execute_python' tool.
-        Whenever the user asks you to process data, calculate math, or manipulate files, 
-        you MUST write Python code and execute it using your tool. 
+        
+        CRITICAL INSTRUCTION: Whenever you write or run Python code, you MUST include the exact code in your final response to the user, wrapped in standard markdown blocks like this:
+        ```python
+        # code goes here
+        ```
+        This allows the user's interface to extract and display the artifact.
+        
         Assume all raw datasets are located in the './data/' folder.
         
         CRITICAL USER PREFERENCES:
         {context}""")
         
-        # 3. Inject the Chat History into the Agent's brain!
         messages_to_send = [system_prompt]
         for msg in request.history:
             if msg.role == 'user':
@@ -83,15 +82,13 @@ async def chat_stream(request: ChatRequest):
                 
         messages_to_send.append(HumanMessage(content=user_input))
 
-        yield f"event: processing\ndata: ⚙️ Agent is executing pipeline tools (standby)...\n\n"
         response = await asyncio.to_thread(agent_executor.invoke, {"messages": messages_to_send})
-        
         final_output = response["messages"][-1].content
         
         words = final_output.split(" ")
         for word in words:
             safe_word = (word + " ").replace("\n", "\\n")
             yield f"event: llm_chunk\ndata: {safe_word}\n\n"
-            await asyncio.sleep(0.03) 
+            await asyncio.sleep(0.02) 
             
     return StreamingResponse(event_generator(), media_type="text/event-stream")
