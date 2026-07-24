@@ -70,7 +70,7 @@ export default function Home() {
   };
 
   return (
-    <main className="relative min-h-screen w-screen overflow-x-hidden bg-[#050505] text-gray-100 flex flex-col items-center justify-between p-6 font-mono">
+    <main className="relative min-h-screen w-screen overflow-x-hidden bg-transparent text-gray-100 flex flex-col items-center justify-between p-6 font-mono">
       {/* Dynamic Background */}
       <ParticleBg agentState={agentState} />
       

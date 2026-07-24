@@ -15,28 +15,28 @@ export default function ParticleBg({ agentState }: { agentState: AgentState }) {
     });
   }, []);
 
-  // Dynamically change colors and speed based on LLM state!
   const config = useMemo(() => {
-    let color = "#FF6600"; // Default Orange
+    let color = "#FF6600"; // Default Orange (Idle)
     let speed = 0.8;
     let linkOpacity = 0.2;
 
     if (agentState === "searching") {
       color = "#00FFFF"; // Cyan
-      speed = 2.5;
-      linkOpacity = 0.4;
+      speed = 3.0;
+      linkOpacity = 0.5;
     } else if (agentState === "executing") {
       color = "#FF0033"; // Aggressive Red
-      speed = 5.0;
-      linkOpacity = 0.1;
+      speed = 6.0;
+      linkOpacity = 0.6;
     } else if (agentState === "streaming") {
       color = "#00FF66"; // Matrix Green
-      speed = 1.5;
-      linkOpacity = 0.3;
+      speed = 2.0;
+      linkOpacity = 0.4;
     }
 
     return {
-      background: { color: { value: "transparent" } },
+      fullScreen: { enable: true, zIndex: -1 }, // <-- THE FIX: Forces particles behind content
+      background: { color: { value: "#050505" } }, // <-- THE FIX: Moves the dark background here
       fpsLimit: 60,
       particles: {
         color: { value: color },
@@ -57,9 +57,9 @@ export default function ParticleBg({ agentState }: { agentState: AgentState }) {
         },
         number: {
           density: { enable: true, area: 800 },
-          value: 60,
+          value: 80, // Increased particle count slightly for better visuals
         },
-        opacity: { value: 0.5 },
+        opacity: { value: 0.6 },
         shape: { type: "circle" },
         size: { value: { min: 1, max: 3 } },
       },
@@ -69,9 +69,6 @@ export default function ParticleBg({ agentState }: { agentState: AgentState }) {
 
   if (!init) return <></>;
 
-  return (
-    <div className="absolute inset-0 -z-10 transition-opacity duration-1000 ease-in-out">
-      <Particles id="tsparticles" options={config as any} />
-    </div>
-  );
+  // Removed the absolute wrapper div to prevent layer clashing
+  return <Particles id="tsparticles" options={config as any} />;
 }
