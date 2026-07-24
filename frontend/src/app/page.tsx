@@ -36,20 +36,18 @@ export default function Home() {
           const lines = chunk.split("\n");
           
           lines.forEach((line) => {
-            const trimmed = line.trim();
-            
-            // 1. Identify the event type
-            if (trimmed.startsWith("event: ")) {
-              currentEvent = trimmed.substring(7); // Strips out "event: "
+            // 1. Identify the event type (we can trim this safely)
+            if (line.startsWith("event: ")) {
+              currentEvent = line.substring(7).trim(); 
             } 
-            // 2. Extract and route the actual data
-            else if (trimmed.startsWith("data: ")) {
-              const dataContent = trimmed.substring(6); // Strips out "data: "
+            // 2. Extract data WITHOUT trimming so we don't destroy spaces!
+            else if (line.startsWith("data: ")) {
+              const dataContent = line.substring(6); // Strips "data: " but keeps the spaces
               
-              if (currentEvent === "processing" && dataContent) {
-                setLogs((prev) => [...prev, dataContent]);
+              if (currentEvent === "processing" && dataContent.trim()) {
+                setLogs((prev) => [...prev, dataContent.trim()]);
               } else if (currentEvent === "llm_chunk") {
-                // Properly format newlines sent by the LLM
+                // Keep spaces, just format newlines
                 const cleanContent = dataContent.replace(/\\n/g, "\n");
                 setLlmResponse((prev) => prev + cleanContent);
               }
